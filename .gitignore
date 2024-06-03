@@ -1,4 +1,18 @@
 # .gitignore
 .env
 .DS_Store
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+__pycache__/
+*.pyc
+*.log
+dist/
+build/
+*.egg-info/
+.vscode/
+.idea/
 
