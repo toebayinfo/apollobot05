@@ -1,8 +1,8 @@
 import asyncio
 import aiohttp
-import uuid
 import json
 from config import DefaultConfig
+from uuid import uuid4
 
 CONFIG = DefaultConfig()
 
@@ -43,7 +43,7 @@ class IngramAPI:
             'Authorization': f'Bearer {self.access_token}',
             'IM-CustomerNumber': CONFIG.INGRAM_CUSTOMER_NUMBER,
             'IM-SenderID': 'MyCompany',
-            'IM-CorrelationID': str(uuid.uuid4()),
+            'IM-CorrelationID': str(uuid4())[:32],  # Ensure the CorrelationID is no more than 32 characters
             'IM-CountryCode': 'US',
             'Accept-Language': 'en',
             'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ class IngramAPI:
             'Content-Type': 'application/json',
             'IM-CustomerNumber': CONFIG.INGRAM_CUSTOMER_NUMBER,
             'IM-CountryCode': 'US',
-            'IM-CorrelationID': str(uuid.uuid4()),
+            'IM-CorrelationID': str(uuid4())[:32],  # Ensure the CorrelationID is no more than 32 characters
             'IM-SenderID': 'MyCompany',
             'Accept': 'application/json'
         }

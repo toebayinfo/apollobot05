@@ -1,5 +1,4 @@
 import re
-import openai
 import traceback
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Activity
@@ -38,7 +37,6 @@ class CustomEchoBot(ActivityHandler):
                 user_state['last_query'] = query  # Save the context
                 preprocessed_query = self.preprocess_query(query)
             
-                # Directly use the preprocessed query without generating synonyms
                 products_data = await self.ingram_api.fetch_products(preprocessed_query)
                 response = self.format_products_response(products_data)
                 response_activity = Activity(type="message", text=response)
@@ -50,7 +48,6 @@ class CustomEchoBot(ActivityHandler):
                 await turn_context.send_activity(Activity(type="message", text=response))
             else:
                 response = await self.get_openai_response(user_message, user_state)
-                # Append additional instruction to the response for better user guidance.
                 additional_instruction = ("  \n\n**--To search the Ingram Micro Database for related products, please start your query with 'search product details for'.**")
                 response += additional_instruction
                 response_activity = Activity(type="message", text=response)
@@ -69,13 +66,9 @@ class CustomEchoBot(ActivityHandler):
                 await turn_context.send_activity(Activity(type="message", text=welcome_text))
 
     def preprocess_query(self, query):
-        # Replace 'laptop' with 'notebook'
         return query.lower().replace("laptop", "notebook")
 
     async def get_openai_response(self, user_message, user_state):
-        openai.api_key = self.openai_api.api_key  # Set your OpenAI API key
-
-        # Refined prompt for general queries with context
         context = "\n".join([f"{key}: {value}" for key, value in user_state.items()])
         prompt = (
             f"You are an assistant helping employees provide relevant product information to employees who reply to customers questions. "
@@ -86,21 +79,12 @@ class CustomEchoBot(ActivityHandler):
         )
 
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4o",
-                temperature=0,
-                max_tokens=256,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            result = response.choices[0].message.content.strip()
+            response = await self.openai_api.ask_openai(prompt)
         except Exception as e:
             print(f"OpenAI API call failed: {str(e)}")
-            result = "I'm sorry, I couldn't retrieve the information at this time."
+            response = "I'm sorry, I couldn't retrieve the information at this time."
 
-        return result
+        return response
 
     def format_products_response(self, products):
         if not products:
@@ -125,7 +109,6 @@ class CustomEchoBot(ActivityHandler):
                 f"**Price and availability information:** {links_info}"
             )
             formatted_products.append(formatted_product)
-        # Append additional instruction for price and availability checks
         additional_instruction = "\n\n**--To check price and availability for any of these products, please use 'price and availability for' followed by the product ID.**"
         formatted_products.append(additional_instruction)
         return "\n\n".join(formatted_products)
