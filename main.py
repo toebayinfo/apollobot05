@@ -1,4 +1,5 @@
 import os
+import logging
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core.integration import aiohttp_error_middleware
@@ -9,14 +10,14 @@ from config import CONFIG
 from bots.echo_bot import CustomEchoBot
 from http import HTTPStatus
 from dotenv import load_dotenv
-import logging
 import json
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Create authentication and adapter
@@ -65,14 +66,16 @@ async def messages(req: Request) -> Response:
 async def health_check(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 
-APP = web.Application(middlewares=[aiohttp_error_middleware])
-APP.router.add_post("/api/messages", messages)
-APP.router.add_get("/health", health_check)
+async def init_fun():
+    app = web.Application(middlewares=[aiohttp_error_middleware])
+    app.router.add_post("/api/messages", messages)
+    app.router.add_get("/health", health_check)
+    return app
 
 if __name__ == "__main__":
     try:
         port = int(os.environ.get("PORT", 8000))
-        web.run_app(APP, host="0.0.0.0", port=port)
+        web.run_app(init_fun(), host="0.0.0.0", port=port)
     except Exception as error:
         logger.error(f"Failed to start the app: {error}")
         raise error
