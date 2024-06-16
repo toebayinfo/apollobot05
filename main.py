@@ -10,7 +10,6 @@ from config import CONFIG
 from bots.echo_bot import CustomEchoBot
 from http import HTTPStatus
 from dotenv import load_dotenv
-import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -33,34 +32,37 @@ BOT = CustomEchoBot(conversation_state)
 
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
-    if req.content_type == "application/json":
+    if req.method == 'POST':
+        if req.content_type == "application/json":
+            try:
+                body = await req.json()
+                logger.info(f"Received request body: {json.dumps(body, indent=2)}")
+            except Exception as e:
+                logger.error(f"Error parsing request body: {e}")
+                return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}")
+        else:
+            logger.error("Unsupported Media Type")
+            return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
         try:
-            body = await req.json()
-            logger.info(f"Received request body: {json.dumps(body, indent=2)}")
+            activity = Activity().deserialize(body)
+            logger.info(f"Deserialized activity: {activity}")
         except Exception as e:
-            logger.error(f"Error parsing request body: {e}")
-            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}")
+            logger.error(f"Failed to deserialize activity: {e}")
+            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}")
+
+        auth_header = req.headers.get("Authorization", "")
+
+        try:
+            response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
+            if response:
+                return json_response(data=response.body, status=response.status)
+            return Response(status=HTTPStatus.OK)
+        except Exception as e:
+            logger.error(f"Error processing activity: {e}")
+            return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e))
     else:
-        logger.error("Unsupported Media Type")
-        return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
-
-    try:
-        activity = Activity().deserialize(body)
-        logger.info(f"Deserialized activity: {activity}")
-    except Exception as e:
-        logger.error(f"Failed to deserialize activity: {e}")
-        return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}")
-
-    auth_header = req.headers.get("Authorization", "")
-
-    try:
-        response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
-        if response:
-            return json_response(data=response.body, status=response.status)
-        return Response(status=HTTPStatus.OK)
-    except Exception as e:
-        logger.error(f"Error processing activity: {e}")
-        return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e))
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
 # Health check endpoint
 async def health_check(req: Request) -> Response:
