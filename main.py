@@ -33,6 +33,7 @@ BOT = CustomEchoBot(conversation_state)
 
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
+    headers = {"Access-Control-Allow-Origin": "*"}
     if req.method == 'POST':
         if req.content_type == "application/json":
             try:
@@ -40,17 +41,17 @@ async def messages(req: Request) -> Response:
                 logger.info(f"Received request body: {json.dumps(body, indent=2)}")
             except Exception as e:
                 logger.error(f"Error parsing request body: {e}")
-                return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}")
+                return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}", headers=headers)
         else:
             logger.error("Unsupported Media Type")
-            return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+            return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, headers=headers)
 
         try:
             activity = Activity().deserialize(body)
             logger.info(f"Deserialized activity: {activity}")
         except Exception as e:
             logger.error(f"Failed to deserialize activity: {e}")
-            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}")
+            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}", headers=headers)
 
         auth_header = req.headers.get("Authorization", "")
 
@@ -58,12 +59,12 @@ async def messages(req: Request) -> Response:
             response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
             if response:
                 return json_response(data=response.body, status=response.status)
-            return Response(status=HTTPStatus.OK)
+            return Response(status=HTTPStatus.OK, headers=headers)
         except Exception as e:
             logger.error(f"Error processing activity: {e}")
-            return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e))
+            return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e), headers=headers)
     else:
-        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED, headers=headers)
 
 # Health check endpoint
 async def health_check(req: Request) -> Response:
