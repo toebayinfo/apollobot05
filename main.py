@@ -4,7 +4,7 @@ import json
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core.integration import aiohttp_error_middleware
-from botbuilder.integration.aiohttp import CloudAdapter, ConfigurationBotFrameworkAuthentication
+from botbuilder.integration.aiohttp import BotFrameworkAdapter, BotFrameworkAdapterSettings
 from botbuilder.schema import Activity
 from botbuilder.core import ConversationState, MemoryStorage
 from config import CONFIG
@@ -20,9 +20,9 @@ log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Create authentication and adapter
-auth_settings = ConfigurationBotFrameworkAuthentication(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
-ADAPTER = CloudAdapter(auth_settings)
+# Create adapter settings
+adapter_settings = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
+ADAPTER = BotFrameworkAdapter(adapter_settings)
 
 # Create conversation state with MemoryStorage
 memory_storage = MemoryStorage()
