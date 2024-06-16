@@ -1,6 +1,7 @@
 import os
-import json  # Ensure json is imported
+import json
 import logging
+import redis
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core.integration import aiohttp_error_middleware
@@ -31,9 +32,23 @@ conversation_state = ConversationState(memory_storage)
 # Create the Bot
 BOT = CustomEchoBot(conversation_state)
 
+# Set up Redis for caching
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = os.getenv('REDIS_PORT', 6379)
+cache = redis.Redis(host=redis_host, port=redis_port, db=0)
+
+# Cache helper functions
+def get_cached_data(key):
+    data = cache.get(key)
+    if data:
+        return json.loads(data)
+    return None
+
+def set_cache_data(key, data, ttl=300):
+    cache.setex(key, ttl, json.dumps(data))
+
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
-    headers = {"Access-Control-Allow-Origin": "*"}
     if req.method == 'POST':
         if req.content_type == "application/json":
             try:
@@ -41,17 +56,17 @@ async def messages(req: Request) -> Response:
                 logger.info(f"Received request body: {json.dumps(body, indent=2)}")
             except Exception as e:
                 logger.error(f"Error parsing request body: {e}")
-                return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}", headers=headers)
+                return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}")
         else:
             logger.error("Unsupported Media Type")
-            return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, headers=headers)
+            return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
 
         try:
             activity = Activity().deserialize(body)
             logger.info(f"Deserialized activity: {activity}")
         except Exception as e:
             logger.error(f"Failed to deserialize activity: {e}")
-            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}", headers=headers)
+            return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}")
 
         auth_header = req.headers.get("Authorization", "")
 
@@ -59,12 +74,12 @@ async def messages(req: Request) -> Response:
             response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
             if response:
                 return json_response(data=response.body, status=response.status)
-            return Response(status=HTTPStatus.OK, headers=headers)
+            return Response(status=HTTPStatus.OK)
         except Exception as e:
             logger.error(f"Error processing activity: {e}")
-            return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e), headers=headers)
+            return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR, text=str(e))
     else:
-        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED, headers=headers)
+        return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
 # Health check endpoint
 async def health_check(req: Request) -> Response:

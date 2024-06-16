@@ -2,6 +2,7 @@ import os
 from openai import AsyncOpenAI
 from config import CONFIG
 from aiohttp import ClientSession, TCPConnector
+from main import get_cached_data, set_cache_data  # Import cache functions from main
 
 class OpenAIAPI:
     def __init__(self):
@@ -12,14 +13,22 @@ class OpenAIAPI:
         # Optimize the prompt to be concise
         optimized_prompt = self.optimize_prompt(prompt)
 
+        # Check cache first
+        cache_key = f"openai_response_{hash(optimized_prompt)}"
+        cached_response = get_cached_data(cache_key)
+        if cached_response:
+            return cached_response
+
         payload = {
-            "model": "gpt-4o",
+            "model": "gpt-4",
             "messages": [{"role": "user", "content": optimized_prompt}]
         }
 
         try:
             response = await self.client.chat.completions.create(**payload)
-            return response.choices[0].message.content.strip()
+            result = response.choices[0].message.content.strip()
+            set_cache_data(cache_key, result)  # Cache the response
+            return result
         except Exception as e:
             print(f"An error occurred: {str(e)}")
             return "An unexpected error occurred. Please try again."
