@@ -1,11 +1,9 @@
 import re
 import traceback
-import json
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
 from botbuilder.schema import Activity
 from api.ingram_api import IngramAPI
 from api.openai_api import OpenAIAPI
-from main import get_cached_data, set_cache_data  # Import cache functions from main
 
 class CustomEchoBot(ActivityHandler):
     def __init__(self, conversation_state: ConversationState):
@@ -27,6 +25,8 @@ class CustomEchoBot(ActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         try:
             user_state = await self.user_state_accessor.get(turn_context, dict)
+        
+            await self.ingram_api.ensure_access_token()
             user_message = turn_context.activity.text.lower()
         
             keyword_search = re.search(r"search product details for (.+)", user_message)
@@ -37,27 +37,14 @@ class CustomEchoBot(ActivityHandler):
                 user_state['last_query'] = query  # Save the context
                 preprocessed_query = self.preprocess_query(query)
             
-                # Check cache first
-                cache_key = f"product_search_{preprocessed_query}"
-                products_data = get_cached_data(cache_key)
-                if not products_data:
-                    products_data = await self.ingram_api.fetch_products(preprocessed_query)
-                    set_cache_data(cache_key, products_data)
-                
+                products_data = await self.ingram_api.fetch_products(preprocessed_query)
                 response = self.format_products_response(products_data)
                 response_activity = Activity(type="message", text=response)
                 await turn_context.send_activity(response_activity)
             elif product_id_search:
                 product_id = product_id_search.group(1)
                 user_state['last_query'] = product_id  # Save the context
-                
-                # Check cache first
-                cache_key = f"product_price_{product_id}"
-                response = get_cached_data(cache_key)
-                if not response:
-                    response = await self.ingram_api.fetch_price_and_availability(product_id)
-                    set_cache_data(cache_key, response)
-                    
+                response = await self.ingram_api.fetch_price_and_availability(product_id)
                 await turn_context.send_activity(Activity(type="message", text=response))
             else:
                 response = await self.get_openai_response(user_message, user_state)
@@ -112,17 +99,16 @@ class CustomEchoBot(ActivityHandler):
             product_type = product.get('productType', 'No product type')
             links_info = "No direct link available"
             if 'links' in product and product['links']:
-                link = next((link for link in product['links'] if link.get('type') == 'productDetail'), None)
+                link = next((link for link in product['links'] if link.get('type') == 'GET'), None)
                 if link:
-                    links_info = f"[Click here to view]({link.get('url')})"
+                    links_info = link['href']
             formatted_product = (
-                f"**Description:** {description}\n"
-                f"**Category:** {category}\n"
-                f"**Sub-Category:** {sub_category}\n"
-                f"**Vendor Name:** {vendor_name}\n"
-                f"**Product Type:** {product_type}\n"
-                f"**Links:** {links_info}\n"
+                f"**Product Details:** {vendor_name} - {description}  \n"
+                f"**Category:** {category} - {sub_category}  \n"
+                f"**Product Type:** {product_type}  \n"
+                f"**Price and availability information:** {links_info}"
             )
             formatted_products.append(formatted_product)
-
+        additional_instruction = "\n\n**--To check price and availability for any of these products, please use 'price and availability for' followed by the product ID.**"
+        formatted_products.append(additional_instruction)
         return "\n\n".join(formatted_products)

@@ -3,7 +3,6 @@ import aiohttp
 import json
 from config import DefaultConfig
 from uuid import uuid4
-from main import get_cached_data, set_cache_data  # Import cache functions from main
 
 CONFIG = DefaultConfig()
 
@@ -39,13 +38,6 @@ class IngramAPI:
 
     async def fetch_products(self, keywords):
         await self.ensure_access_token()
-        
-        # Check cache first
-        cache_key = f"product_search_{keywords}"
-        cached_data = get_cached_data(cache_key)
-        if cached_data:
-            return cached_data
-        
         url = 'https://api.ingrammicro.com:443/sandbox/resellers/v6/catalog'
         headers = {
             'Authorization': f'Bearer {self.access_token}',
@@ -70,7 +62,6 @@ class IngramAPI:
             async with session.get(url, headers=headers, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    set_cache_data(cache_key, data.get('catalog', []))  # Cache the data
                     return data.get('catalog', [])
                 else:
                     print(f"Failed API Call for keyword '{keywords}': {response.status}, {await response.text()}")
@@ -78,13 +69,6 @@ class IngramAPI:
 
     async def fetch_price_and_availability(self, ingram_part_number):
         await self.ensure_access_token()
-        
-        # Check cache first
-        cache_key = f"product_price_{ingram_part_number}"
-        cached_data = get_cached_data(cache_key)
-        if cached_data:
-            return cached_data
-
         url = (f'https://api.ingrammicro.com:443/sandbox/resellers/v6/catalog/priceandavailability'
             f'?includePricing=true&includeAvailability=true&includeProductAttributes=true')
 
@@ -104,7 +88,7 @@ class IngramAPI:
             async with session.post(url, headers=headers, data=data) as response:
                 if response.status == 200:
                     product_details = await response.json()
-                    set_cache_data(cache_key, self.format_product_details(product_details))  # Cache the data
+                    print(f"Raw response data: {product_details}")  # Debug print to check response data
                     return self.format_product_details(product_details)
                 else:
                     error_message = await response.text()
@@ -112,7 +96,10 @@ class IngramAPI:
                     return f"Failed to fetch details: {response.status} - {error_message}"
 
     def format_product_details(self, product_details):
+        print(f"Raw product details: {product_details}")  # Debug print to check response data
+
         if not isinstance(product_details, list) or not product_details:
+            print("Invalid product data format or empty products list.")
             return "Invalid product data format."
 
         formatted_products = []
