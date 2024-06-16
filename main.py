@@ -21,8 +21,8 @@ logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelnam
 logger = logging.getLogger(__name__)
 
 # Create authentication and adapter
-auth = ConfigurationBotFrameworkAuthentication(CONFIG)
-ADAPTER = CloudAdapter(auth)
+auth_settings = ConfigurationBotFrameworkAuthentication(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
+ADAPTER = CloudAdapter(auth_settings)
 
 # Create conversation state with MemoryStorage
 memory_storage = MemoryStorage()
