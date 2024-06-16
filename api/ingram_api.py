@@ -107,9 +107,13 @@ class IngramAPI:
             availability = product.get('availability', {})
             pricing = product.get('pricing', {})
 
+            availability_by_warehouse = availability.get('availabilityByWarehouse', [])
+            if availability_by_warehouse is None:
+                availability_by_warehouse = []
+
             availability_details = "\n".join(
                 [f"Warehouse: {wh.get('location', 'N/A')}, Quantity Available: {wh.get('quantityAvailable', 'N/A')}" 
-                for wh in availability.get('availabilityByWarehouse', [])]
+                for wh in availability_by_warehouse]
             )
 
             response = (
