@@ -1,5 +1,6 @@
+# Optimize the imports by ordering and removing unused ones
 import os
-import json  # Ensure json is imported
+import json
 import logging
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
@@ -12,26 +13,20 @@ from bots.echo_bot import CustomEchoBot
 from http import HTTPStatus
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Set up logging
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Create authentication and adapter
 auth = ConfigurationBotFrameworkAuthentication(CONFIG)
 ADAPTER = CloudAdapter(auth)
 
-# Create conversation state with MemoryStorage
 memory_storage = MemoryStorage()
 conversation_state = ConversationState(memory_storage)
 
-# Create the Bot
 BOT = CustomEchoBot(conversation_state)
 
-# Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
     headers = {"Access-Control-Allow-Origin": "*"}
     if req.method == 'POST':
@@ -66,7 +61,6 @@ async def messages(req: Request) -> Response:
     else:
         return Response(status=HTTPStatus.METHOD_NOT_ALLOWED, headers=headers)
 
-# Health check endpoint
 async def health_check(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 

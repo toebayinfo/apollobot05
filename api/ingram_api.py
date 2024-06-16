@@ -43,7 +43,7 @@ class IngramAPI:
             'Authorization': f'Bearer {self.access_token}',
             'IM-CustomerNumber': CONFIG.INGRAM_CUSTOMER_NUMBER,
             'IM-SenderID': 'MyCompany',
-            'IM-CorrelationID': str(uuid4())[:32],  # Ensure the CorrelationID is no more than 32 characters
+            'IM-CorrelationID': str(uuid4())[:32],
             'IM-CountryCode': 'US',
             'Accept-Language': 'en',
             'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ class IngramAPI:
             'Content-Type': 'application/json',
             'IM-CustomerNumber': CONFIG.INGRAM_CUSTOMER_NUMBER,
             'IM-CountryCode': 'US',
-            'IM-CorrelationID': str(uuid4())[:32],  # Ensure the CorrelationID is no more than 32 characters
+            'IM-CorrelationID': str(uuid4())[:32],
             'IM-SenderID': 'MyCompany',
             'Accept': 'application/json'
         }
@@ -88,7 +88,7 @@ class IngramAPI:
             async with session.post(url, headers=headers, data=data) as response:
                 if response.status == 200:
                     product_details = await response.json()
-                    print(f"Raw response data: {product_details}")  # Debug print to check response data
+                    print(f"Raw response data: {product_details}")
                     return self.format_product_details(product_details)
                 else:
                     error_message = await response.text()
@@ -96,7 +96,7 @@ class IngramAPI:
                     return f"Failed to fetch details: {response.status} - {error_message}"
 
     def format_product_details(self, product_details):
-        print(f"Raw product details: {product_details}")  # Debug print to check response data
+        print(f"Raw product details: {product_details}")
 
         if not isinstance(product_details, list) or not product_details:
             print("Invalid product data format or empty products list.")
