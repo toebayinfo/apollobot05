@@ -1,11 +1,10 @@
 import os
+import json  # Ensure json is imported
 import logging
-import json
-import asyncio
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core.integration import aiohttp_error_middleware
-from botbuilder.integration.aiohttp import BotFrameworkAdapter, BotFrameworkAdapterSettings
+from botbuilder.integration.aiohttp import CloudAdapter, ConfigurationBotFrameworkAuthentication
 from botbuilder.schema import Activity
 from botbuilder.core import ConversationState, MemoryStorage
 from config import CONFIG
@@ -21,9 +20,9 @@ log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Create adapter settings
-adapter_settings = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
-ADAPTER = BotFrameworkAdapter(adapter_settings)
+# Create authentication and adapter
+auth = ConfigurationBotFrameworkAuthentication(CONFIG)
+ADAPTER = CloudAdapter(auth)
 
 # Create conversation state with MemoryStorage
 memory_storage = MemoryStorage()
@@ -70,18 +69,17 @@ async def messages(req: Request) -> Response:
 async def health_check(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 
-def init_func(argv=None):
+def init_func(argv):
     app = web.Application(middlewares=[aiohttp_error_middleware])
     app.router.add_post("/api/messages", messages)
     app.router.add_get("/health", health_check)
     return app
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    app = init_func()
+    APP = init_func(None)
     try:
         port = int(os.environ.get("PORT", 8000))
-        web.run_app(app, host="0.0.0.0", port=port)
+        web.run_app(APP, host="0.0.0.0", port=port)
     except Exception as error:
         logger.error(f"Failed to start the app: {error}")
         raise error
