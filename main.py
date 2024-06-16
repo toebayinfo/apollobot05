@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import asyncio
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 from botbuilder.core.integration import aiohttp_error_middleware
@@ -69,17 +70,18 @@ async def messages(req: Request) -> Response:
 async def health_check(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 
-def init_func(argv):
+def init_func(argv=None):
     app = web.Application(middlewares=[aiohttp_error_middleware])
     app.router.add_post("/api/messages", messages)
     app.router.add_get("/health", health_check)
     return app
 
 if __name__ == "__main__":
-    APP = init_func(None)
+    loop = asyncio.get_event_loop()
+    app = init_func()
     try:
         port = int(os.environ.get("PORT", 8000))
-        web.run_app(APP, host="0.0.0.0", port=port)
+        web.run_app(app, host="0.0.0.0", port=port)
     except Exception as error:
         logger.error(f"Failed to start the app: {error}")
         raise error
