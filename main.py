@@ -66,7 +66,7 @@ async def messages(req: Request) -> Response:
 async def health_check(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 
-async def init_fun():
+async def init_fun(argv):
     app = web.Application(middlewares=[aiohttp_error_middleware])
     app.router.add_post("/api/messages", messages)
     app.router.add_get("/health", health_check)
@@ -75,7 +75,7 @@ async def init_fun():
 if __name__ == "__main__":
     try:
         port = int(os.environ.get("PORT", 8000))
-        web.run_app(init_fun(), host="0.0.0.0", port=port)
+        web.run_app(init_fun([]), host="0.0.0.0", port=port)
     except Exception as error:
         logger.error(f"Failed to start the app: {error}")
         raise error
