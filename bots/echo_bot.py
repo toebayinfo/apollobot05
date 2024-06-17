@@ -73,6 +73,7 @@ class CustomEchoBot(ActivityHandler):
         prompt = (
             f"You are an assistant helping employees provide relevant product information to employees who reply to customers questions. "
             f"When asked a question, provide correct, concise, relevant, and to-the-point answers. "
+            f"In your answers please do not mention anything about your latest update."
             f"Here is the current context of the conversation:\n{context}\n"
             f"Example user message: '{user_message}'"
             f"Make sure to include the most up-to-date and accurate information, particularly for product releases and specifications."
