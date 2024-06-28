@@ -35,9 +35,8 @@ class CustomEchoBot(ActivityHandler):
             if keyword_search:
                 query = keyword_search.group(1)
                 user_state['last_query'] = query  # Save the context
-                preprocessed_query = self.preprocess_query(query)
-            
-                products_data = await self.ingram_api.fetch_products(preprocessed_query)
+                
+                products_data = await self.ingram_api.fetch_products(query)
                 response = self.format_products_response(products_data)
                 response_activity = Activity(type="message", text=response)
                 await turn_context.send_activity(response_activity)
@@ -64,9 +63,6 @@ class CustomEchoBot(ActivityHandler):
             if member.id != turn_context.activity.recipient.id:
                 welcome_text = "Welcome to the Apollo Bot! How can I help you today?"
                 await turn_context.send_activity(Activity(type="message", text=welcome_text))
-
-    def preprocess_query(self, query):
-        return query.lower().replace("laptop", "notebook")
 
     async def get_openai_response(self, user_message, user_state):
         context = "\n".join([f"{key}: {value}" for key, value in user_state.items()])
