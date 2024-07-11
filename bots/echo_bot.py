@@ -11,6 +11,7 @@ class CustomEchoBot(ActivityHandler):
         self.openai_api = OpenAIAPI()
         self.conversation_state = conversation_state
         self.user_state_accessor = self.conversation_state.create_property("UserState")
+        self.welcomed_user_ids = set()
 
     async def on_turn(self, turn_context: TurnContext):
         try:
@@ -59,8 +60,11 @@ class CustomEchoBot(ActivityHandler):
             await self.conversation_state.save_changes(turn_context)
 
     async def on_members_added_activity(self, members_added, turn_context: TurnContext):
+        conversation_id = turn_context.activity.conversation.id
+
         for member in members_added:
-            if member.id != turn_context.activity.recipient.id:
+            if member.id != turn_context.activity.recipient.id and member.id not in self.welcomed_user_ids:
+                self.welcomed_user_ids.add(member.id)
                 welcome_text = "Welcome to the Apollo Bot! How can I help you today?"
                 await turn_context.send_activity(Activity(type="message", text=welcome_text))
 

@@ -1,5 +1,5 @@
 import os
-import json  # Ensure json is imported
+import json
 import logging
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
@@ -54,7 +54,6 @@ async def messages(req: Request) -> Response:
             return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}", headers=headers)
 
         auth_header = req.headers.get("Authorization", "")
-
         try:
             response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
             if response:
