@@ -75,21 +75,19 @@ class IngramAPI:
                 logging.error("Request timed out")
                 return []
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2), retry=retry_if_exception_type(asyncio.TimeoutError))
+    @retry(stop=stop_after_attempt(2), wait=wait_fixed(5), retry=retry_if_exception_type(asyncio.TimeoutError))
     async def fetch_price_and_availability(self, ingram_part_number):
         await self.ensure_access_token()
         base_url = 'https://api.ingrammicro.com:443/sandbox/resellers/v6/catalog/priceandavailability'
-        
-        # Query parameters
+    
         params = {
             "includeAvailability": "true",
             "includePricing": "true",
             "includeProductAttributes": "true"
         }
-        
-        # Construct the full URL with query parameters
+    
         url = f"{base_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"
-        
+    
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'accept': 'application/json',
@@ -99,7 +97,7 @@ class IngramAPI:
             'IM-SenderID': 'MyCompany',
             'Content-Type': 'application/json'
         }
-        
+    
         payload = {
             "products": [
                 {
@@ -112,7 +110,7 @@ class IngramAPI:
         logging.debug(f"Request Headers: {headers}")
         logging.debug(f"Request Payload: {payload}")
 
-        timeout = ClientTimeout(total=60)  # Set a 60-second timeout
+        timeout = ClientTimeout(total=30)  # Increased timeout to 30 seconds
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             try:
@@ -122,19 +120,18 @@ class IngramAPI:
                     logging.debug(f"Response Text: {response_text}")
                     if response.status == 200:
                         product_details = await response.json()
-                        return product_details  # Return raw API response
+                        return product_details
                     else:
                         error_msg = f"Failed to fetch details: {response.status} - {response_text}"
                         logging.error(error_msg)
                         return error_msg
             except asyncio.TimeoutError:
-                error_msg = "Request timed out"
-                logging.error(error_msg)
-                raise  # Re-raise the TimeoutError for the retry decorator
+                logging.error(f"Request timed out for part number: {ingram_part_number}")
+                raise
             except Exception as e:
                 error_msg = f"An error occurred: {str(e)}"
                 logging.error(error_msg)
-                return error_msg
+                raise  # Re-raise the exception to be caught by the retry decorator
 
     def format_product_details(self, product_details):
         logging.debug(f"Received product details: {product_details}")

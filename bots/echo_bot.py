@@ -1,3 +1,4 @@
+import asyncio
 import re
 import traceback
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState
@@ -44,8 +45,15 @@ class CustomEchoBot(ActivityHandler):
             elif product_id_search:
                 product_id = product_id_search.group(1)
                 user_state['last_query'] = product_id  # Save the context
-                response = await self.ingram_api.fetch_price_and_availability(product_id)
-                await turn_context.send_activity(Activity(type="message", text=response))
+                await turn_context.send_activity("Fetching price and availability. This may take a moment...")
+                try:
+                    response = await self.ingram_api.fetch_price_and_availability(product_id)
+                    formatted_response = self.ingram_api.format_product_details(response)
+                    await turn_context.send_activity(Activity(type="message", text=formatted_response))
+                except asyncio.TimeoutError:
+                    await turn_context.send_activity("I'm sorry, but the request for price and availability timed out. This product might not be available or there might be an issue with the service. Please try again later or contact support if the problem persists.")
+                except Exception as e:
+                    await turn_context.send_activity(f"An error occurred while fetching price and availability: {str(e)}")
             else:
                 response = await self.get_openai_response(user_message, user_state)
                 additional_instruction = ("  \n\n**--To search the Ingram Micro Database for related products, please start your query with 'search product details for'.**")
