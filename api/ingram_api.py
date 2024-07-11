@@ -122,7 +122,7 @@ class IngramAPI:
                     logging.debug(f"Response Text: {response_text}")
                     if response.status == 200:
                         product_details = await response.json()
-                        return self.format_product_details(product_details)
+                        return product_details  # Return raw API response
                     else:
                         error_msg = f"Failed to fetch details: {response.status} - {response_text}"
                         logging.error(error_msg)
