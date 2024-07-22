@@ -10,14 +10,9 @@ from botbuilder.core import ConversationState, MemoryStorage
 from config import CONFIG
 from bots.echo_bot import CustomEchoBot
 from http import HTTPStatus
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Set up logging
-log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=CONFIG.LOG_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Create authentication and adapter
@@ -38,7 +33,7 @@ async def messages(req: Request) -> Response:
         if req.content_type == "application/json":
             try:
                 body = await req.json()
-                logger.info(f"Received request body: {json.dumps(body, indent=2)}")
+                logger.debug(f"Received request body: {json.dumps(body, indent=2)}")
             except Exception as e:
                 logger.error(f"Error parsing request body: {e}")
                 return Response(status=HTTPStatus.BAD_REQUEST, text=f"Error parsing request body: {e}", headers=headers)
@@ -48,7 +43,7 @@ async def messages(req: Request) -> Response:
 
         try:
             activity = Activity().deserialize(body)
-            logger.info(f"Deserialized activity: {activity}")
+            logger.debug(f"Deserialized activity: {activity}")
         except Exception as e:
             logger.error(f"Failed to deserialize activity: {e}")
             return Response(status=HTTPStatus.BAD_REQUEST, text=f"Failed to deserialize activity: {e}", headers=headers)
@@ -78,8 +73,7 @@ def init_func(argv):
 if __name__ == "__main__":
     APP = init_func(None)
     try:
-        port = int(os.environ.get("PORT", 8000))
-        web.run_app(APP, host="0.0.0.0", port=port)
+        web.run_app(APP, host="0.0.0.0", port=CONFIG.PORT)
     except Exception as error:
         logger.error(f"Failed to start the app: {error}")
         raise error

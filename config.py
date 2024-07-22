@@ -1,7 +1,13 @@
 import os
+import logging
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env file if present
+# Load environment variables from .env file if present
+load_dotenv()
+
+# Set up logging
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper())
+logger = logging.getLogger(__name__)
 
 class DefaultConfig:
     PORT = int(os.environ.get("PORT", 8000))
@@ -17,13 +23,14 @@ class DefaultConfig:
     AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID", "")
     SHAREPOINT_SITE_URL = os.environ.get("SHAREPOINT_SITE_URL", "")
     EXCEL_FILE_URL = os.environ.get("EXCEL_FILE_URL", "")
-    
+
     def __init__(self):
-        print(f"AZURE_CLIENT_ID: {self.AZURE_CLIENT_ID}")
-        print(f"AZURE_CLIENT_SECRET: {self.AZURE_CLIENT_SECRET[:5]}...")  # Print only first 5 chars for security
-        print(f"AZURE_TENANT_ID: {self.AZURE_TENANT_ID}")
-        print(f"SHAREPOINT_SITE_URL: {self.SHAREPOINT_SITE_URL}")
-        print(f"EXCEL_FILE_URL: {self.EXCEL_FILE_URL}")
+        # Log configuration details at DEBUG level
+        logger.debug(f"AZURE_CLIENT_ID: {self.AZURE_CLIENT_ID}")
+        logger.debug(f"AZURE_CLIENT_SECRET: {self.AZURE_CLIENT_SECRET[:5]}...")  # Log only first 5 chars for security
+        logger.debug(f"AZURE_TENANT_ID: {self.AZURE_TENANT_ID}")
+        logger.debug(f"SHAREPOINT_SITE_URL: {self.SHAREPOINT_SITE_URL}")
+        logger.debug(f"EXCEL_FILE_URL: {self.EXCEL_FILE_URL}")
 
+# Create a single instance of DefaultConfig
 CONFIG = DefaultConfig()
-
