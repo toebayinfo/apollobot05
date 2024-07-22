@@ -29,6 +29,9 @@ BOT = CustomEchoBot(conversation_state)
 
 # Listen for incoming requests on /api/messages
 async def messages(req: Request) -> Response:
+    logger.debug(f"Received request headers: {req.headers}")
+    logger.debug(f"Received request method: {req.method}")
+
     if req.method == 'POST':
         if "application/json" in req.headers.get("Content-Type", ""):
             try:
@@ -50,6 +53,7 @@ async def messages(req: Request) -> Response:
 
         auth_header = req.headers.get("Authorization", "")
         try:
+            logger.debug(f"Processing activity with auth header: {auth_header[:10]}...")  # Log first 10 chars of auth header
             response = await ADAPTER.process_activity(auth_header, activity, BOT.on_turn)
             if response:
                 return json_response(data=response.body, status=response.status)
