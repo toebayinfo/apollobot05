@@ -12,6 +12,9 @@ idna==3.7
 jsonpickle==1.4.2
 multidict==6.0.5
 openai==1.23.6
+office365-rest-python-client
+openpyxl
+pandas
 pycparser==2.22
 python-dotenv==1.0.1
 requests==2.31.0
@@ -21,3 +24,7 @@ typing_extensions==4.11.0
 urllib3==1.26.18
 Werkzeug==3.0.2
 yarl==1.9.4
+spacy==3.5.3
+nltk==3.8.1
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.21.1
