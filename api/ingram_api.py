@@ -8,7 +8,7 @@ from aiohttp import ClientTimeout
 import logging
 import spacy
 from nltk.stem import PorterStemmer, WordNetLemmatizer
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz, process
 import nltk
 
 CONFIG = DefaultConfig()
@@ -59,8 +59,8 @@ class IngramAPI:
         lemmatized = [self.lemmatizer.lemmatize(word) for word in words]
         return set(stemmed + lemmatized)
 
-    def fuzzy_match(self, query, product_name, threshold=80):
-        return fuzz.partial_ratio(query.lower(), product_name.lower()) >= threshold
+    def fuzzy_match(self, query, product_text, threshold=80):
+        return fuzz.partial_ratio(query.lower(), product_text.lower(), score_cutoff=threshold)
 
     def filter_available_products(self, products):
         available_products = [product for product in products if self.is_product_available(product)]
@@ -154,8 +154,8 @@ class IngramAPI:
             score += sum(keyword in product_text for keyword in processed_keywords) * 10
             
             # Check for fuzzy matches
-            score += sum(self.fuzzy_match(keyword, product_text) for keyword in processed_keywords) / 10
-            
+            score += sum(self.fuzzy_match(keyword, product_text, threshold=80) or 0 for keyword in processed_keywords) / 10            
+
             # Check for brand matches
             if any(brand.lower() in product.get('vendorName', '').lower() for brand in intent['brands']):
                 score += 50

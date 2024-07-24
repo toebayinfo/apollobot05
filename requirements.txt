@@ -9,14 +9,13 @@ botframework-streaming==4.15.0
 certifi==2024.2.2
 cffi==1.16.0
 charset-normalizer==3.3.2
-fuzzywuzzy==0.18.0
 idna==3.7
 jsonpickle==1.4.2
 multidict==6.0.5
 openai==1.23.6
-office365-rest-python-client
-openpyxl
-pandas
+office365-rest-python-client==2.5.11
+openpyxl==3.1.5
+pandas==2.2.2
 pycparser==2.22
 python-dotenv==1.0.1
 requests==2.31.0
